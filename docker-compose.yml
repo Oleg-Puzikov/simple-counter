@@ -1,4 +1,5 @@
 services:
+  # --- DEV фронтенд (Vite) ---
   frontend:
     container_name: counter-frontend-dev
     build:
@@ -6,11 +7,14 @@ services:
       dockerfile: Dockerfile.dev
     ports:
       - "3000:5173"
+    environment:
+      - VITE_API_URL=http://localhost:3001
     volumes:
       - .:/app
       - /app/node_modules
     profiles: ["dev"]
 
+  # --- PROD фронтенд (Nginx отдаёт статику И проксирует /api на backend) ---
   frontend-prod:
     container_name: counter-frontend-prod
     build:
@@ -18,4 +22,51 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8080:80"
+    depends_on:
+      - backend
     profiles: ["prod"]
+
+  # --- Бекэнд API ---
+  backend:
+    container_name: counter-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile # можно опустить, имя по умолчанию
+    environment:
+      - PORT=3001
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=app
+      - DB_PASSWORD=app
+      - DB_NAME=counter
+      # Разрешаем CORS из dev фронта (браузер идёт на localhost:3001)
+      - CORS_ORIGIN=http://localhost:3000
+    ports:
+      - "3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles: ["dev", "prod"]
+
+    # --- База данных MySQL ---
+  db:
+    image: mysql:8.0
+    container_name: counter-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=counter
+      - MYSQL_USER=app
+      - MYSQL_PASSWORD=app
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -proot --silent"]
+      interval: 5s
+      timeout: 2s
+      retries: 30
+    ports:
+      - "3306:3306"   # опционально, чтобы подключаться локальным клиентом
+    profiles: ["dev", "prod"]
+volumes:
+  db_data:
