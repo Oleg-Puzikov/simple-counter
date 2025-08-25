@@ -47,13 +47,24 @@ app.post('/api/events', async (req, res) => {
   }
 });
 
-// (опц.) получить последние 20 событий
-app.get('/api/events', async (_req, res) => {
+// получение данных из БД
+app.get('/api/events', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT id, button, pressed_at FROM events ORDER BY id DESC LIMIT 20');
+    const limitParam = req.query.limit;
+    // limit=all -> без LIMIT; иначе число (по умолчанию 1000, но ограничим сверху)
+    const limit =
+      limitParam === 'all'
+        ? null
+        : Math.min(Math.max(parseInt(limitParam ?? '1000', 10) || 1000, 1), 10000);
+
+    const baseSql = 'SELECT id, button, pressed_at FROM events ORDER BY id DESC';
+    const [rows] = limit
+      ? await pool.query(`${baseSql} LIMIT ?`, [limit])
+      : await pool.query(baseSql);
+
     res.json(rows);
   } catch (e) {
-    res.status(500).json({ ok: false });
+    res.status(500).json({ ok: false, error: 'DB select failed' });
   }
 });
 

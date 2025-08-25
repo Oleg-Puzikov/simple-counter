@@ -20,3 +20,12 @@ button {
 button:hover { background: #111827; border-color: #4b5563; }
 button:active { transform: translateY(1px) scale(.99); }
 .small { margin-top: 10px; font-size: 12px; color: #94a3b8; }
+
+.events-wrap { margin-top: 24px; text-align: left; }
+.events-title { margin: 0 0 12px; font-size: 18px; color: #cbd5e1; }
+
+table.events { width: 100%; border-collapse: collapse; background: #0b1220; border: 1px solid #243041; border-radius: 12px; overflow: hidden; }
+table.events th, table.events td { padding: 10px 12px; border-bottom: 1px solid #1e293b; }
+table.events thead th { background: #111827; font-weight: 600; }
+table.events tbody tr:nth-child(odd) { background: #0e1626; }
+table.events tbody tr:hover { background: #131e33; }
